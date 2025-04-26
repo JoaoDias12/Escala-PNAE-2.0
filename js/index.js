@@ -76,7 +76,7 @@ btnLogin.addEventListener('click', e => {
   }
 })
 
-let actualLogin = 'Dias'
+let actualLogin = ''
 
 /////////////////////////////////////////////////////////////////
 //////////////////////////FIREBASE USER HANDLING/////////////////
@@ -117,7 +117,7 @@ function checkAndCreateUser(username) {
 let Scales
 let nameEscala = document.getElementById('nameEscala')
 
-let actualScale = '-OOVupIf0JfBij2S-3AP'
+let actualScale = ''
 
 // Função para criar nova escala no Firebase
 function createNewEscala() {
