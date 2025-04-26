@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!--
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="no">
+        -->
+    <meta
+      name="viewport"
+      content="initial-scale=1, width=device-width, viewport-fit=cover"
+    />
+    <link rel="stylesheet/less" type="text/css" href="css/styles.less" />
+    <link rel="stylesheet" href="fonts/style.css" />
+    <title>Escala</title>
+  </head>
+  <body>
+    <div id="login" class="login hidden">
+      <h1>Escala</h1>
+
+      <form id="LoginForm">
+        <label for="" id="lbIncorrect"></label>
+        <div>
+          <label for="inptUser">Usuário</label>
+          <input
+            autocomplete="off"
+            required
+            id="inptUser"
+            placeholder="Usuário"
+            type="text"
+          />
+        </div>
+
+        <div>
+          <label for="inptPassword">Senha</label>
+          <input
+            autocomplete="off"
+            required
+            id="inptPassword"
+            placeholder="Senha"
+            type="password"
+            name=""
+            id="inptPassword"
+          />
+        </div>
+        <input type="submit" id="btnLogin" value="Entrar" />
+      </form>
+    </div>
+
+    <div class="allEscalas hidden" id="allEscalas">
+      <button id="logout" class="logout">
+        <i class="icon-exit"></i>
+      </button>
+
+      <div id="listEscalas" class="listEscalas"></div>
+      <button class="btnCreateEscalas" id="btnCreateEscalas">+</button>
+    </div>
+
+    <div class="EscalaShow hidde" id="EscalaShow">
+      <h1 id="nameEscala"></h1>
+      <div class="line"></div>
+      <button id="btnHome"><i class="icon-home"></i></button>
+      <button class="hidden" id="btnSave">Salvar</button>
+
+      <div class="escalaOptions">
+        <button id="btnFolgas">Folgas</button>
+        <button id="btnEscalaShow">Escala</button>
+        <button id="btnConfigsEscala">Posições</button>
+      </div>
+
+      <button id="btnReload"><i class="icon-loop2"></i></button>
+      <button id="btnAddPeople"><h2>+</h2></button>
+      <button id="btnRemovePeople"><i class="icon-cross"></i></button>
+
+      <div class="hidden" id="addPeopleScreen">
+        <button id="closeAddPeopleScreen"><i class="icon-cross"></i></button>
+        <form action="">
+          <div class="dv2">
+            <label for="registry">Matricula</label>
+            <input autocomplete="off" required id="registry" type="number" />
+          </div>
+
+          <div class="dv2">
+            <label for="addPeopleName">Nome :</label>
+            <input autocomplete="off" required id="addPeopleName" type="text" />
+          </div>
+
+          <div class="dv1">
+            <div class="dv2">
+              <label for="addTimeEnterPeople">Horário Entrada</label>
+              <input
+                autocomplete="off"
+                required
+                id="addTimeEnterPeople"
+                type="text"
+              />
+            </div>
+            <div class="dv2">
+              <label for="addTimeExitPeople">Horário Saída</label>
+              <input
+                autocomplete="off"
+                required
+                id="addTimeExitPeople"
+                type="text"
+              />
+            </div>
+          </div>
+
+          <div class="dv2">
+            <label for="addPeopleTime">Turno</label>
+            <input autocomplete="off" required id="addPeopleTime" type="text" />
+          </div>
+
+          <h2>Primeiro dia de folga Única!</h2>
+          <div class="dv1">
+            <div class="dv2">
+              <label for="addPeopleFirstDay">Dia</label>
+              <input
+                autocomplete="off"
+                required
+                id="addPeopleFirstDay"
+                type="number"
+              />
+            </div>
+            <div class="dv2">
+              <label for="addPeopleFirstMonth">Mês</label>
+              <input
+                autocomplete="off"
+                required
+                id="addPeopleFirstMonth"
+                type="number"
+              />
+            </div>
+          </div>
+
+          <div class="dv2">
+            <label for="addPeopleTypeScale">Tipo de Escala</label>
+            <input
+              autocomplete="off"
+              required
+              id="addPeopleTypeScale"
+              type="text"
+              value="6/1 - 6/2"
+            />
+          </div>
+
+          <div class="dv2">
+            <label for="addPeopleRole">Cargo</label>
+            <input
+              autocomplete="off"
+              required
+              id="addPeopleRole"
+              type="text"
+              value=""
+            />
+          </div>
+
+          <input id="savePeopleInPeoples" type="submit" value="Salvar" />
+        </form>
+      </div>
+
+      <!---------------------------------------->
+      <div class="peoplesPDF" id="peoplesPDF"></div>
+      <button id="btnSavePDF">Salvar PDF</button>
+      <!---------------------------------------->
+      <div class="peoplesEscala hidden" id="peoplesEscala"></div>
+      <button id="btnSavePDFEscala">Salvar PDF</button>
+      <button class="hidden" onclick="deliverPeoples()" id="btnDeliverPeoples">
+        Preencher
+      </button>
+      <!---------------------------------------->
+      <div class="peoplesConfigEscala hidden" id="peoplesConfigEscala">
+        <button id="btnCreatePosition" onclick="createPosition()">
+          Adicionar Posição
+        </button>
+        <div id="positionsContainer"></div>
+      </div>
+    </div>
+  </body>
+  <script src="js/less.js"></script>
+
+  <!------------------------------------->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+  <!------------------------------------->
+
+  <!------------------------------------->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <!------------------------------------->
+
+  <script src="js/index.js"></script>
+</html>
