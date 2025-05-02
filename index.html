@@ -16,7 +16,7 @@
     <title>Escala</title>
   </head>
   <body>
-    <div id="login" class="login hidde">
+    <div id="login" class="login hidden">
       <h1>Escala</h1>
 
       <form id="LoginForm">
@@ -57,16 +57,17 @@
       <button class="btnCreateEscalas" id="btnCreateEscalas">+</button>
     </div>
 
-    <div class="EscalaShow hidden" id="EscalaShow">
-      <h1 id="nameEscala"></h1>
+    <div class="EscalaShow hidde" id="EscalaShow">
+      <h1 id="nameEscala">Nova Escala</h1>
       <div class="line"></div>
       <button id="btnHome"><i class="icon-home"></i></button>
-      <button class="hidden" id="btnSave">Salvar</button>
+      <input type="submit" class="hidden" id="btnSave" value="Salvar" />
 
       <div class="escalaOptions">
         <button id="btnFolgas">Folgas</button>
         <button id="btnEscalaShow">Escala</button>
         <button id="btnConfigsEscala">Posições</button>
+        <button id="btnConfigsPeoples">Pessoas</button>
       </div>
 
       <button id="btnReload"><i class="icon-loop2"></i></button>
@@ -165,7 +166,7 @@
       <button id="btnSavePDF">Salvar PDF</button>
       <!---------------------------------------->
       <div class="peoplesEscala hidden" id="peoplesEscala"></div>
-      <button id="btnSavePDFEscala">Salvar PDF</button>
+      <button class="hidden" id="btnSavePDFEscala">Salvar PDF</button>
       <button class="hidden" onclick="deliverPeoples()" id="btnDeliverPeoples">
         Preencher
       </button>
@@ -176,6 +177,10 @@
         </button>
         <div id="positionsContainer"></div>
       </div>
+      <!---------------------------------------->
+      <div class="peoplesConfig hidden" id="peoplesConfig">
+        <div class="people-list" id="peopleList"></div>
+      </div>
     </div>
   </body>
   <script src="js/less.js"></script>
@@ -184,8 +189,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-
-  <!------------------------------------->
 
   <!------------------------------------->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
