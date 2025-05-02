@@ -76,7 +76,9 @@ btnLogin.addEventListener('click', e => {
   }
 })
 
-let actualLogin = ''
+let actualLogin = 'Dias'
+let actualScale = '-OOVupIf0JfBij2S-3AP'
+//
 
 /////////////////////////////////////////////////////////////////
 //////////////////////////FIREBASE USER HANDLING/////////////////
@@ -117,11 +119,11 @@ function checkAndCreateUser(username) {
 let Scales
 let nameEscala = document.getElementById('nameEscala')
 
-let actualScale = ''
-
 // Função para criar nova escala no Firebase
 function createNewEscala() {
   const userActual = actualLogin
+
+  console.log('macaco')
 
   // Verifica se há usuário logado
   if (!userActual) {
@@ -131,7 +133,7 @@ function createNewEscala() {
   }
 
   // Referência para o nó do usuário Dias
-  const diasRef = database.ref('Users/Dias')
+  const diasRef = database.ref(`Users/${actualLogin}`)
 
   // Cria um novo nó de escala com um ID único
   const newScaleRef = diasRef.child('Escalas').push()
@@ -164,13 +166,16 @@ function loadEscalas() {
   const listEscalas = document.getElementById('listEscalas')
   listEscalas.innerHTML = ''
 
-  const escalasRef = database.ref('Users/Dias/Escalas')
+  const escalasRef = database.ref(`Users/${actualLogin}/Escalas`)
 
   escalasRef.once('value').then(snapshot => {
     const escalasData = snapshot.val()
 
     if (!escalasData) {
       listEscalas.innerHTML = '<p>Nenhuma escala encontrada.</p>'
+      setTimeout(function () {
+        listEscalas.innerHTML = ''
+      }, 1000)
       return
     }
 
@@ -194,6 +199,8 @@ function loadEscalas() {
   })
 }
 
+loadEscalas()
+
 function setupScaleClickListeners() {
   const Scales = document.querySelectorAll('.Escala')
 
@@ -211,6 +218,7 @@ function setupScaleClickListeners() {
       loadPeoplesFromEscala(escalaId)
       createPeoplesPDF()
       loadPeoplesFromDatabase()
+
       loadEscala()
     })
   })
@@ -218,7 +226,7 @@ function setupScaleClickListeners() {
 
 function loadPeoplesFromEscala(escalaId) {
   const database = firebase.database()
-  const escalaRef = database.ref(`Users/Dias/Escalas/${escalaId}`)
+  const escalaRef = database.ref(`Users/${actualLogin}/Escalas/${escalaId}`)
 
   escalaRef.once('value').then(snapshot => {
     const escala = snapshot.val()
@@ -260,6 +268,8 @@ function loadPeoplesFromDatabase() {
 
         peoples = peoplesData
         console.log('Dados carregados:', peoples)
+        updateAndSavePeoples()
+
         createPeoplesPDF()
       } else {
         console.log('Nenhum dado encontrado')
@@ -281,7 +291,9 @@ document.addEventListener('keydown', function (event) {
 
 // Configura o evento de clique no botão
 const btnCreateEscalas = document.getElementById('btnCreateEscalas')
-btnCreateEscalas.addEventListener('click', createNewEscala)
+btnCreateEscalas.addEventListener('click', function () {
+  createNewEscala()
+})
 
 /////////////////////////////////////////////////////////////////
 ////////////////////////////ESCALAS PNAE/////////////////////////
@@ -299,15 +311,22 @@ let btnHome = document.getElementById('btnHome')
 let btnSave = document.getElementById('btnSave')
 
 let btnSavePDF = document.getElementById('btnSavePDF')
+let btnSavePDFEscala = document.getElementById('btnSavePDFEscala')
 
 let peoples = {}
 
 btnReload.addEventListener('click', function () {
+  btnReload.style.animation = 'animationRoll linear infinite 0.5s'
+
+  setTimeout(function () {
+    btnReload.style.animation = ''
+    renderPeopleConfig(peoples)
+  }, 1000)
+
   loadPeoplesFromEscala(actualScale)
   createPeoplesPDF()
   loadPeoplesFromDatabase()
   loadEscala()
-  console.log(peoples)
 })
 
 btnHome.addEventListener('click', function () {
@@ -320,6 +339,7 @@ nameEscala.addEventListener('click', function () {
   input.type = 'text'
   input.value = this.textContent
   input.id = 'nameEscala'
+  input.required = true
 
   this.replaceWith(input)
 
@@ -340,7 +360,7 @@ btnSave.addEventListener('click', function () {
     return
   }
 
-  const escalaRef = database.ref(`Users/Dias/Escalas/${actualScale}`)
+  const escalaRef = database.ref(`Users/${actualLogin}/Escalas/${actualScale}`)
 
   escalaRef
     .update({
@@ -351,6 +371,18 @@ btnSave.addEventListener('click', function () {
 
       nameEscala.replaceWith(h1)
       nameEscala = document.getElementById('nameEscala')
+      nameEscala.addEventListener('click', function () {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.value = this.textContent
+        input.id = 'nameEscala'
+        input.required = true
+
+        this.replaceWith(input)
+
+        nameEscala = document.getElementById('nameEscala')
+        btnSave.classList.remove('hidden')
+      })
       btnSave.classList.add('hidden')
       loadEscalas()
     })
@@ -359,13 +391,20 @@ btnSave.addEventListener('click', function () {
     })
 })
 
-function calcSlacks(proximoPeriodo, escala, pessoa) {
+///////////////////////////////////
+///////////////////////////////////
+///////////////////////////////////
+///////////////////////////////////
+///////////////////////////////////
+
+// Função para calcular folgas (mantendo o nome original)
+function calcSlacksForPeriod(proximoPeriodo, escala, pessoa) {
   let dataAtual = getSPTime()
   let folgas = []
 
   let diaInicioFolga = peoples[pessoa].FirstDay
   let mesInicioFolga = peoples[pessoa].FirstMonth
-  let dupla = peoples[pessoa].Double // Obter o valor inicial de Dupla
+  let dupla = peoples[pessoa].Dupla // Obter o valor inicial de Dupla
   let dataInicioFolga = new Date(
     dataAtual.getFullYear(),
     mesInicioFolga - 1,
@@ -381,6 +420,7 @@ function calcSlacks(proximoPeriodo, escala, pessoa) {
     if (dupla) {
       let dataFolga2 = new Date(dataInicioFolga)
       dataFolga2.setDate(dataInicioFolga.getDate() + 1)
+      ultimasFolgas.push(dataFolga2.toDateString())
     }
 
     dataInicioFolga.setDate(
@@ -389,25 +429,28 @@ function calcSlacks(proximoPeriodo, escala, pessoa) {
     dupla = !dupla // Alternar entre folga simples e dupla
   }
 
+  // Pegar apenas as últimas 2 folgas anteriores
+  ultimasFolgas = ultimasFolgas.slice(-2)
+
   // Loop para calcular folgas para o próximo período
   while (folgas.length < proximoPeriodo) {
     let dataFolga1 = new Date(dataInicioFolga)
-    folgas.push(dataFolga1.getDate())
+    folgas.push(dataFolga1.toDateString())
 
     if (dupla) {
       let dataFolga2 = new Date(dataInicioFolga)
       dataFolga2.setDate(dataInicioFolga.getDate() + 1)
-      folgas.push(dataFolga2.getDate())
+      folgas.push(dataFolga2.toDateString())
     }
 
     // Atualizar a data de início para a próxima folga
     dataInicioFolga.setDate(
       dataInicioFolga.getDate() + escala + 1 + (dupla ? 1 : 0)
     )
-    dupla = !dupla // Alternar entre folga simples e dupla
+    dupla = !dupla
   }
 
-  return [...folgas]
+  return [...ultimasFolgas, ...folgas]
 }
 
 function isSlackToday(diasFolga) {
@@ -417,7 +460,7 @@ function isSlackToday(diasFolga) {
 
 function updateSlacks(peoples) {
   Object.keys(peoples).forEach(nome => {
-    let folgas = calcSlacks(6, 6, nome)
+    let folgas = calcSlacksForPeriod(32, 6, nome)
     peoples[nome].Folga = isSlackToday(folgas)
     peoples[nome].Folgas = folgas
   })
@@ -426,67 +469,63 @@ function updateSlacks(peoples) {
 function createPeoplesPDF() {
   peoplesPDF.innerHTML = ''
 
-  // Obtém a data atual no fuso de SP usando a nova função
+  // Atualiza folgas primeiro
+  updateSlacks(peoples)
+
   const currentDate = getSPTime()
-  const currentMonth = currentDate.getMonth() // 0-11
-  const currentYear = currentDate.getFullYear()
+  const currentDay = currentDate.getDate()
+  const mostrarProximoMes = currentDay >= 25
 
-  // Dias no mês atual
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+  // Configurar mês para exibir
+  const mesParaExibir = mostrarProximoMes
+    ? currentDate.getMonth() + 1 > 11
+      ? 0
+      : currentDate.getMonth() + 1
+    : currentDate.getMonth()
+  const anoParaExibir = mostrarProximoMes
+    ? currentDate.getMonth() + 1 > 11
+      ? currentDate.getFullYear() + 1
+      : currentDate.getFullYear()
+    : currentDate.getFullYear()
 
-  // Objeto para armazenar as divs de cada time
-  const timeContainers = {}
+  // Container do mês
+  const monthContainer = document.createElement('div')
+  monthContainer.className = 'container-month'
 
-  // Primeiro passamos por todas as pessoas para criar os containers de time
+  // Cabeçalho
+  const monthHeader = document.createElement('h2')
+  monthHeader.textContent = `Mês - ${mesParaExibir + 1}/${anoParaExibir}`
+  monthContainer.appendChild(monthHeader)
+
+  // Processar times (mantendo estrutura original)
+  let timeContainers = {}
+
+  // Criar containers para cada time
   Object.keys(peoples).forEach(personKey => {
     const person = peoples[personKey]
-    const rawTime = person.Time || 'SEMTIME' // Usa 'SEMTIME' se não tiver time definido
-    const time = rawTime.toUpperCase() // Converte para maiúsculas
+    const time = (person.Time || '').toUpperCase()
 
     if (!timeContainers[time]) {
-      // Cria o cabeçalho do time (usando o valor original para exibição)
-      const timeHeader = document.createElement('h2')
+      const timeHeader = document.createElement('h3')
       timeHeader.textContent = time
-      peoplesPDF.appendChild(timeHeader)
+      monthContainer.appendChild(timeHeader)
 
-      // Cria o container do time
       const timeDiv = document.createElement('div')
-      timeDiv.className = `Time${time.replace(/\s+/g, '')}` // Remove espaços para nome de classe
+      timeDiv.className = `Time${time.replace(/\s+/g, '')}`
       timeContainers[time] = timeDiv
-      peoplesPDF.appendChild(timeDiv)
+      monthContainer.appendChild(timeDiv)
     }
   })
 
-  // Agora processamos cada pessoa e adicionamos ao seu respectivo container
+  // Processar cada pessoa
   Object.keys(peoples).forEach(personKey => {
     const person = peoples[personKey]
-    const rawTime = person.Time || 'SEMTIME' // Usa 'SEMTIME' se não tiver time definido
-    const time = rawTime.toUpperCase() // Converte para maiúsculas
-
-    // Atualiza as folgas (assumindo que updateSlacks está correto)
-    updateSlacks(peoples)
+    const time = (person.Time || 'SEMTIME').toUpperCase()
 
     const personDiv = document.createElement('div')
     personDiv.className = 'person'
 
-    // Cria container para os dias
-    const allDaysDiv = document.createElement('div')
-    allDaysDiv.className = 'allDays'
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dayElement = document.createElement('div')
-      dayElement.className = 'day'
-      dayElement.textContent = day
-
-      // Verifica se o dia está no array de folgas
-      if (person.Folgas.includes(day)) {
-        dayElement.classList.add('slack')
-      }
-
-      allDaysDiv.appendChild(dayElement)
-    }
-
-    // Cria os elementos individuais
+    // Elementos da pessoa (mantendo estrutura original)
     const matricula = document.createElement('div')
     matricula.className = 'matricula'
     matricula.textContent = person.Matricula
@@ -503,11 +542,47 @@ function createPeoplesPDF() {
     timeExit.className = 'timeExit'
     timeExit.textContent = person.TimeExit
 
+    const allDaysDiv = document.createElement('div')
+    allDaysDiv.className = 'allDays'
+
+    // Dias do mês
+    const daysInMonth = new Date(anoParaExibir, mesParaExibir + 1, 0).getDate()
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayElement = document.createElement('div')
+      dayElement.className = 'day'
+      dayElement.textContent = day
+
+      // Verificar se é folga (comparando dia e mês)
+      if (person.Folgas) {
+        person.Folgas.forEach(folgaDateStr => {
+          const folgaDate = new Date(folgaDateStr)
+          if (
+            folgaDate.getDate() === day &&
+            folgaDate.getMonth() === mesParaExibir &&
+            folgaDate.getFullYear() === anoParaExibir
+          ) {
+            dayElement.classList.add('slack')
+          }
+        })
+      }
+
+      allDaysDiv.appendChild(dayElement)
+    }
+
+    // Total de folgas no mês
     const totalFolgas = document.createElement('div')
     totalFolgas.className = 'totalFolgas'
-    totalFolgas.textContent = person.Folgas.length
+    totalFolgas.textContent = person.Folgas
+      ? person.Folgas.filter(folgaDateStr => {
+          const folgaDate = new Date(folgaDateStr)
+          return (
+            folgaDate.getMonth() === mesParaExibir &&
+            folgaDate.getFullYear() === anoParaExibir
+          )
+        }).length
+      : 0
 
-    // Monta a estrutura
+    // Montar estrutura
     personDiv.appendChild(matricula)
     personDiv.appendChild(name)
     personDiv.appendChild(timeEnter)
@@ -515,9 +590,16 @@ function createPeoplesPDF() {
     personDiv.appendChild(allDaysDiv)
     personDiv.appendChild(totalFolgas)
 
-    // Adiciona a pessoa ao container do seu time (usando o time em maiúsculas)
     timeContainers[time].appendChild(personDiv)
   })
+
+  peoplesPDF.appendChild(monthContainer)
+}
+
+function updateAndSavePeoples() {
+  updateSlacks(peoples)
+
+  savePeoplesToDatabase()
 }
 
 btnSavePDF.addEventListener('click', function () {
@@ -525,51 +607,164 @@ btnSavePDF.addEventListener('click', function () {
 })
 
 async function transformInPDF() {
-  const { jsPDF } = window.jspdf // Se estiver usando CDN
+  const { jsPDF } = window.jspdf
   const element = document.getElementById('peoplesPDF')
 
-  // 1. Converter HTML para canvas
-  const canvas = await html2canvas(element, {
-    scale: 2, // Aumenta a qualidade
-    useCORS: true, // Permite imagens externas
-    logging: true, // Mostra erros no console
-    backgroundColor: '#ffffff' // Fundo branco
-  })
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: true,
+      backgroundColor: '#ffffff'
+    })
 
-  // 2. Configurações do PDF (Letter Landscape)
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'in',
-    format: 'letter'
-  })
+    // CONFIGURAÇÕES PERSONALIZÁVEIS (ajuste esses valores)
+    const pdfConfig = {
+      orientation: 'landscape',
+      unit: 'in',
+      format: [15, 10], // [width, height] em polegadas (customizado)
+      margin: 0.5, // margem em polegadas
+      contentScale: 0.99 // escala do conteúdo (90% da área útil)
+    }
 
-  // 3. Dimensões da página e imagem (90% da área útil)
-  const pageWidth = 11 // Largura da página em polegadas (Letter landscape)
-  const pageHeight = 8.5 // Altura da página
+    const pdf = new jsPDF(pdfConfig)
 
-  const margin = 0.5 // Margem de 0.5" (ajuste conforme necessário)
-  const usableWidth = pageWidth - margin * 2
-  const usableHeight = pageHeight - margin * 2
+    // DIMENSIONAMENTO AUTOMÁTICO (não mexa aqui - calcula proporções)
+    const pageWidth = pdfConfig.format[0]
+    const pageHeight = pdfConfig.format[1]
 
-  // 4. Calcular proporção para ocupar 90% da área útil
-  const imgRatio = canvas.width / canvas.height
-  let imgWidth = usableWidth * 0.9
-  let imgHeight = imgWidth / imgRatio
+    const usableWidth = pageWidth - pdfConfig.margin * 2
+    const usableHeight = pageHeight - pdfConfig.margin * 2
 
-  // Se a altura ultrapassar 90% da área, redimensionamos
-  if (imgHeight > usableHeight * 0.9) {
-    imgHeight = usableHeight * 0.9
-    imgWidth = imgHeight * imgRatio
+    const imgRatio = canvas.width / canvas.height
+
+    // Lógica de redimensionamento proporcional
+    let imgWidth = usableWidth * pdfConfig.contentScale
+    let imgHeight = imgWidth / imgRatio
+
+    if (imgHeight > usableHeight * pdfConfig.contentScale) {
+      imgHeight = usableHeight * pdfConfig.contentScale
+      imgWidth = imgHeight * imgRatio
+    }
+
+    // Centralização automática
+    const xPos = (pageWidth - imgWidth) / 2
+    const yPos = (pageHeight - imgHeight) / 2
+
+    // DEBUG (verifique no console se os valores fazem sentido)
+    console.log({
+      pageSize: [pageWidth, pageHeight],
+      imageSize: [imgWidth, imgHeight],
+      position: [xPos, yPos],
+      ratio: imgRatio
+    })
+
+    pdf.addImage(
+      canvas.toDataURL('image/jpeg', 0.8),
+      'JPEG',
+      xPos,
+      yPos,
+      imgWidth,
+      imgHeight
+    )
+
+    pdf.save(`EscalaFolgas${getMonthName()}.pdf`)
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error)
   }
-
-  // 5. Centralizar na página
-  const xPos = (pageWidth - imgWidth) / 2
-  const yPos = (pageHeight - imgHeight) / 2
-
-  // 6. Adicionar imagem ao PDF
-  pdf.addImage(canvas, 'JPEG', xPos, yPos, imgWidth, imgHeight)
-  pdf.save('Escala.pdf')
 }
+
+btnSavePDFEscala.addEventListener('click', function () {
+  transformInPDFPositions()
+})
+
+async function transformInPDFPositions() {
+  const { jsPDF } = window.jspdf
+  const element = document.getElementById('peoplesEscala')
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: true,
+      backgroundColor: '#ffffff'
+    })
+
+    // CONFIGURAÇÕES PERSONALIZÁVEIS (ajuste esses valores)
+    const pdfConfig = {
+      orientation: 'landscape',
+      unit: 'in',
+      format: [15, 10], // [width, height] em polegadas (customizado)
+      margin: 0.5, // margem em polegadas
+      contentScale: 0.9 // escala do conteúdo (90% da área útil)
+    }
+
+    const pdf = new jsPDF(pdfConfig)
+
+    // DIMENSIONAMENTO AUTOMÁTICO (não mexa aqui - calcula proporções)
+    const pageWidth = pdfConfig.format[0]
+    const pageHeight = pdfConfig.format[1]
+
+    const usableWidth = pageWidth - pdfConfig.margin * 2
+    const usableHeight = pageHeight - pdfConfig.margin * 2
+
+    const imgRatio = canvas.width / canvas.height
+
+    // Lógica de redimensionamento proporcional
+    let imgWidth = usableWidth * pdfConfig.contentScale
+    let imgHeight = imgWidth / imgRatio
+
+    if (imgHeight > usableHeight * pdfConfig.contentScale) {
+      imgHeight = usableHeight * pdfConfig.contentScale
+      imgWidth = imgHeight * imgRatio
+    }
+
+    // Centralização automática
+    const xPos = (pageWidth - imgWidth) / 2
+    const yPos = (pageHeight - imgHeight) / 2
+
+    // DEBUG (verifique no console se os valores fazem sentido)
+    console.log({
+      pageSize: [pageWidth, pageHeight],
+      imageSize: [imgWidth, imgHeight],
+      position: [xPos, yPos],
+      ratio: imgRatio
+    })
+
+    pdf.addImage(
+      canvas.toDataURL('image/jpeg', 0.8),
+      'JPEG',
+      xPos,
+      yPos,
+      imgWidth,
+      imgHeight
+    )
+
+    pdf.save(`EscalaPosições${getMonthName()}.pdf`)
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error)
+  }
+}
+
+function getMonthName() {
+  const date = getSPTime()
+  const months = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro'
+  ]
+  return months[date.getMonth()]
+}
+
 /////////////////////////////////////////////////////////////////
 ////////////////////ESCALAS ADD/REMOVE PEOPLE////////////////////
 
@@ -669,7 +864,7 @@ function savePeoplesToDatabase() {
   }
 
   const escalaPeoplesRef = database.ref(
-    `Users/Dias/Escalas/${actualScale}/peoples`
+    `Users/${actualLogin}/Escalas/${actualScale}/peoples`
   )
 
   escalaPeoplesRef.set(peoples, function (error) {
@@ -677,10 +872,9 @@ function savePeoplesToDatabase() {
       console.error('Erro ao salvar pessoas:', error)
     } else {
       console.log('Dados salvos com sucesso na escala:', actualScale)
+      createPeoplesPDF() // Atualiza a exibição após salvar
     }
   })
-
-  createPeoplesPDF()
 }
 
 /////////////////////////////////////////////////////////////////
@@ -689,11 +883,12 @@ function savePeoplesToDatabase() {
 let btnFolgas = document.getElementById('btnFolgas')
 let btnEscalaShow = document.getElementById('btnEscalaShow')
 let btnConfigsEscala = document.getElementById('btnConfigsEscala')
+let btnConfigsPeoples = document.getElementById('btnConfigsPeoples')
 
 let peoplesEscala = document.getElementById('peoplesEscala')
-let btnSavePDFEscala = document.getElementById('btnSavePDFEscala')
 let peoplesConfigEscala = document.getElementById('peoplesConfigEscala')
 let btnDeliverPeoples = document.getElementById('btnDeliverPeoples')
+let peoplesConfig = document.getElementById('peoplesConfig')
 
 btnFolgas.addEventListener('click', function () {
   peoplesPDF.classList.remove('hidden')
@@ -702,6 +897,7 @@ btnFolgas.addEventListener('click', function () {
   peoplesEscala.classList.add('hidden')
   btnSavePDFEscala.classList.add('hidden')
   btnDeliverPeoples.classList.add('hidden')
+  peoplesConfig.classList.add('hidden')
 
   peoplesConfigEscala.classList.add('hidden')
 })
@@ -709,6 +905,7 @@ btnFolgas.addEventListener('click', function () {
 btnEscalaShow.addEventListener('click', function () {
   peoplesPDF.classList.add('hidden')
   btnSavePDF.classList.add('hidden')
+  peoplesConfig.classList.add('hidden')
 
   btnDeliverPeoples.classList.remove('hidden')
   peoplesEscala.classList.remove('hidden')
@@ -721,6 +918,7 @@ btnConfigsEscala.addEventListener('click', function () {
   peoplesPDF.classList.add('hidden')
   btnSavePDF.classList.add('hidden')
   btnDeliverPeoples.classList.add('hidden')
+  peoplesConfig.classList.add('hidden')
 
   peoplesEscala.classList.add('hidden')
   btnSavePDFEscala.classList.add('hidden')
@@ -728,10 +926,33 @@ btnConfigsEscala.addEventListener('click', function () {
   peoplesConfigEscala.classList.remove('hidden')
 })
 
+btnConfigsPeoples.addEventListener('click', function () {
+  peoplesPDF.classList.add('hidden')
+  btnSavePDF.classList.add('hidden')
+  btnDeliverPeoples.classList.add('hidden')
+
+  peoplesConfig.classList.remove('hidden')
+
+  peoplesEscala.classList.add('hidden')
+  btnSavePDFEscala.classList.add('hidden')
+
+  peoplesConfigEscala.classList.add('hidden')
+})
+
 /////////////////////////////////////////////////////////////////
 /////////////////////////ESCALACONFIG////////////////////////////
 
 let savePosition
+
+function getFirstTwoNames(fullName) {
+  const names = fullName.trim().split(/\s+/)
+
+  if (names.length >= 3 && /^(da|de|do|das|dos)$/i.test(names[1])) {
+    return `${names[0]} ${names[2]}`
+  }
+
+  return names.slice(0, 2).join(' ')
+}
 
 function createPosition() {
   const positionsContainer = document.getElementById('positionsContainer')
@@ -782,8 +1003,10 @@ function createPosition() {
           .map(
             pessoa => `
           <label class="option-item">
-            <input class="inptPeopleFixPositions" type="checkbox" value="${pessoa.Matricula}">
-            <span>${pessoa.Name}</span>
+            <input class="inptPeopleFixPositions" type="checkbox" value="${
+              pessoa.Matricula
+            }">
+            <span>${getFirstTwoNames(pessoa.Name)}</span>
           </label>
         `
           )
@@ -833,22 +1056,79 @@ function createPosition() {
     <button type="button" class="removePosition">Remover Posição</button>
   `
 
-  // Evento para remover
   positionDiv
     .querySelector('.removePosition')
     .addEventListener('click', function () {
-      if (confirm('Tem certeza que deseja remover esta posição?')) {
-        positionDiv.remove()
-      }
+      removePosition_(this.parentElement)
     })
 
   positionDiv
     .querySelector('.savePosition')
     .addEventListener('click', function () {
-      createInPeoplesEscala(this)
+      savePosition_(this)
     })
 
   positionsContainer.appendChild(positionDiv)
+}
+
+async function removePosition_(positionDiv) {
+  if (!confirm('Tem certeza que deseja remover esta posição?')) return
+
+  const positionName = positionDiv.querySelector('.inptNamePosition').value
+  if (!positionName) {
+    alert('Posição sem nome não pode ser removida!')
+    return
+  }
+
+  try {
+    const escalaRef = database.ref(
+      `Users/${actualLogin}/Escalas/${actualScale}`
+    )
+
+    // Adicione await aqui
+    const snapshot = await escalaRef.once('value')
+    const data = snapshot.val()
+
+    // 1. Prepara os updates para o Firebase
+    const updates = {}
+
+    // Remove do positionsData
+    if (data.positionsData && data.positionsData[positionName]) {
+      updates[`positionsData/${positionName}`] = null
+    }
+
+    // Remove do escalaPositions
+    if (data.escalaPositions && data.escalaPositions[positionName]) {
+      updates[`escalaPositions/${positionName}`] = null
+    }
+
+    // 2. Executa a remoção no Firebase em uma única operação
+    if (Object.keys(updates).length > 0) {
+      await escalaRef.update(updates) // Adicione await aqui também
+    }
+
+    // 3. Remove da tela:
+    //    - A div da posição na lista de configurações
+    positionDiv.remove()
+
+    //    - TODOS os elementos no peoplesEscala com data-remove correspondente
+    document
+      .querySelectorAll(
+        `.escalaPosition[data-remove="${CSS.escape(positionName)}"]`
+      )
+      .forEach(element => {
+        element.remove()
+      })
+
+    alert('Posição removida com sucesso!')
+  } catch (error) {
+    console.error('Erro ao remover posição:', error)
+    alert('Erro ao remover posição.')
+  }
+}
+
+async function savePosition_(position) {
+  createInPeoplesEscala(position)
 }
 
 function getPessoasSelecionadas(posElement) {
@@ -905,7 +1185,7 @@ function createInPeoplesEscala(button) {
     } else {
       // CRIA nova posição
       dayContainer.innerHTML += `
-        <div class="escalaPosition">
+        <div class="escalaPosition" data-remove="${inptName}">
           <h2 class="textNameValue">${inptName}</h2>
           <div class="spacePeopleMin"></div>
           <div class="spacePeopleFix"></div>
@@ -1062,6 +1342,14 @@ function createWeekDays() {
       </div>
     `
   }
+  document
+    .getElementById('peoplesEscala')
+    .addEventListener('click', function (e) {
+      const dayContainer = e.target.closest('.day-container')
+      if (dayContainer) {
+        fullScreen(dayContainer)
+      }
+    })
 }
 
 function getDayName(dayIndex) {
@@ -1083,7 +1371,71 @@ function formatDate(date) {
   return `${day}/${month}`
 }
 
+function fullScreen(clickedDayContainer) {
+  const isFullScreen = clickedDayContainer.classList.contains('full-screen')
+  const allContainers = document.querySelectorAll('.day-container')
+
+  // Alterna entre os estados
+  allContainers.forEach(container => {
+    if (container === clickedDayContainer) {
+      container.classList.toggle('full-screen', !isFullScreen)
+    } else {
+      container.classList.toggle('hidden', !isFullScreen)
+    }
+  })
+
+  // Adiciona/remove classe do container principal
+  peoplesEscala.classList.toggle('full-screen-mode', !isFullScreen)
+
+  if (!isFullScreen) {
+    clickedDayContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+// Adiciona os event listeners a todos os day-containers
+document.querySelectorAll('.day-container').forEach(container => {
+  container.addEventListener('click', function () {
+    fullScreen(this)
+  })
+})
+
 ////////////////////////////////////////////////////////////////
+
+function getFolgaStringFromDayMonth(day, month) {
+  try {
+    const spDate = getSPTime()
+    const date = new Date(spDate.getFullYear(), month - 1, day)
+
+    // Verifica se a data é válida
+    if (isNaN(date.getTime())) {
+      console.error('Data inválida:', { day, month })
+      return ''
+    }
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ]
+
+    return `${days[date.getDay()]} ${months[date.getMonth()]} ${
+      date.getDate() < 10 ? '0' : ''
+    }${date.getDate()} ${date.getFullYear()}`
+  } catch (error) {
+    console.error('Erro ao formatar data de folga:', error)
+    return ''
+  }
+}
 
 function deliverPeoples() {
   // Zera completamente a escala antes de redistribuir
@@ -1309,7 +1661,13 @@ function getRequiredTimes(position) {
 function isPersonAvailable(person, day, month) {
   if (person.Holiday || person.Docket) return false
 
-  if (person.Folgas && person.Folgas.includes(day)) return false
+  // Verifica se a pessoa tem folga nesse dia
+  if (person.Folgas && person.Folgas.length > 0) {
+    const folgaString = getFolgaStringFromDayMonth(day, month)
+    if (person.Folgas.includes(folgaString)) {
+      return false
+    }
+  }
 
   return true
 }
@@ -1325,23 +1683,27 @@ async function saveEscala() {
       throw new Error('Usuário ou escala não identificados')
     }
 
-    // 1. Primeiro obtemos os dados atuais para preservar o que não vamos modificar
     const snapshot = await database
       .ref(`Users/${actualLogin}/Escalas/${actualScale}`)
       .once('value')
     const currentData = snapshot.val() || {}
 
-    // 2. Captura apenas os dados que queremos atualizar
-    const positionsData = []
+    // Salva positionsData como objeto (chave = nome da posição)
+    const positionsData = {}
     const positionElements = document.querySelectorAll(
       '#positionsContainer .positionsEscala'
     )
 
     positionElements.forEach(position => {
-      const positionObj = {
+      const positionName = position
+        .querySelector('.inptNamePosition')
+        ?.value.trim()
+      if (!positionName) return
+
+      positionsData[positionName] = {
         html: position.outerHTML,
         values: {
-          name: position.querySelector('.inptNamePosition')?.value || '',
+          name: positionName,
           quantMin:
             position.querySelector('.inptQuantMinPosition')?.value || '0',
           quantFix:
@@ -1357,30 +1719,40 @@ async function saveEscala() {
           ).map(el => el.value)
         }
       }
-      positionsData.push(positionObj)
     })
 
-    // 3. Prepara apenas os dados que serão atualizados
+    // Salva apenas as posições individuais do peoplesEscala (sem os day-containers)
+    const escalaPositions = {}
+    document
+      .querySelectorAll('#peoplesEscala .escalaPosition')
+      .forEach(position => {
+        const positionName = position
+          .querySelector('.textNameValue')
+          ?.textContent.trim()
+        if (positionName) {
+          escalaPositions[positionName] = position.outerHTML
+        }
+      })
+
+    // Prepara os dados para atualização
     const updateData = {
-      positionsData: positionsData,
-      peoplesEscala: document.getElementById('peoplesEscala').innerHTML,
+      positionsData,
+      escalaPositions, // Agora salvamos apenas as posições individuais
       updatedAt: Date.now(),
       updatedBy: actualLogin
     }
 
-    // 4. Se existir nome da escala e não estivermos atualizando, mantemos o existente
-    if (currentData.name && !document.getElementById('escalaName')?.value) {
+    // Mantém o nome da escala
+    if (currentData.name) {
       updateData.name = currentData.name
     } else if (document.getElementById('escalaName')?.value) {
       updateData.name = document.getElementById('escalaName').value
     }
 
-    // 5. ATUALIZAÇÃO SEGURA - usa update() em vez de set() para não apagar outros campos
     await database
       .ref(`Users/${actualLogin}/Escalas/${actualScale}`)
       .update(updateData)
-
-    console.log('Escala salva com sucesso (SEM APAGAR PEOPLES)!')
+    console.log('Escala salva com sucesso!')
     return true
   } catch (error) {
     console.error('Erro ao salvar escala:', error)
@@ -1405,81 +1777,73 @@ async function loadEscala() {
       return false
     }
 
-    // Carrega o peoplesEscala se existir
-    if (escalaData.peoplesEscala) {
-      document.getElementById('peoplesEscala').innerHTML =
-        escalaData.peoplesEscala
+    // Carrega peoplesEscala - cria a estrutura dos dias primeiro
+    const peoplesEscalaContainer = document.getElementById('peoplesEscala')
+    peoplesEscalaContainer.innerHTML = ''
+
+    // Cria os dias da semana
+    createWeekDays()
+
+    // Adiciona as posições salvas em cada dia correspondente
+    if (escalaData.escalaPositions) {
+      Object.values(escalaData.escalaPositions).forEach(positionHTML => {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = positionHTML
+        const positionElement = tempDiv.firstChild
+
+        // Adiciona a posição em todos os dias
+        document
+          .querySelectorAll('#peoplesEscala .day-container')
+          .forEach(day => {
+            day.appendChild(positionElement.cloneNode(true))
+          })
+      })
     }
 
-    // Carrega as posições com seus valores
+    // Carrega positionsData (configurações das posições)
     const positionsContainer = document.getElementById('positionsContainer')
     positionsContainer.innerHTML = ''
 
-    // Verifica se positionsData existe e é um array
-    if (escalaData.positionsData && Array.isArray(escalaData.positionsData)) {
-      escalaData.positionsData.forEach(positionObj => {
-        if (!positionObj || !positionObj.html) return
+    if (escalaData.positionsData) {
+      Object.values(escalaData.positionsData).forEach(positionObj => {
+        if (!positionObj?.html) return
 
-        // Cria um elemento temporário para reconstruir a posição
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = positionObj.html
         const positionElement = tempDiv.firstChild
 
-        // Preenche os valores salvos se existirem
+        // Preenche os valores salvos
         if (positionObj.values) {
-          const values = positionObj.values
+          const { name, quantMin, quantFix, peopleFix, times, roles } =
+            positionObj.values
 
-          // Preenche inputs de texto/número
-          const nameInput = positionElement.querySelector('.inptNamePosition')
-          if (nameInput && values.name) nameInput.value = values.name
+          // Preenche inputs básicos
+          positionElement.querySelector('.inptNamePosition').value = name
+          positionElement.querySelector('.inptQuantMinPosition').value =
+            quantMin
+          positionElement.querySelector('.inptQuantFixPosition').value =
+            quantFix
 
-          const quantMinInput = positionElement.querySelector(
-            '.inptQuantMinPosition'
-          )
-          if (quantMinInput && values.quantMin)
-            quantMinInput.value = values.quantMin
-
-          const quantFixInput = positionElement.querySelector(
-            '.inptQuantFixPosition'
-          )
-          if (quantFixInput && values.quantFix)
-            quantFixInput.value = values.quantFix
-
-          // Marca checkboxes de pessoas fixas
-          if (values.peopleFix && Array.isArray(values.peopleFix)) {
-            values.peopleFix.forEach(value => {
-              const checkbox = positionElement.querySelector(
-                `.inptPeopleFixPositions[value="${value}"]`
-              )
-              if (checkbox) checkbox.checked = true
-            })
+          // Marca checkboxes
+          const checkboxes = {
+            peopleFix: '.inptPeopleFixPositions',
+            times: '.inptTimesPositions',
+            roles: '.inptRolesPositions'
           }
 
-          // Marca checkboxes de horários
-          if (values.times && Array.isArray(values.times)) {
-            values.times.forEach(value => {
-              const checkbox = positionElement.querySelector(
-                `.inptTimesPositions[value="${value}"]`
-              )
-              if (checkbox) checkbox.checked = true
-            })
-          }
-
-          // Marca checkboxes de cargos
-          if (values.roles && Array.isArray(values.roles)) {
-            values.roles.forEach(value => {
-              const checkbox = positionElement.querySelector(
-                `.inptRolesPositions[value="${value}"]`
-              )
-              if (checkbox) checkbox.checked = true
-            })
-          }
+          Object.entries(checkboxes).forEach(([key, selector]) => {
+            const values = positionObj.values[key]
+            if (values?.length) {
+              positionElement.querySelectorAll(selector).forEach(checkbox => {
+                checkbox.checked = values.includes(checkbox.value)
+              })
+            }
+          })
         }
 
         positionsContainer.appendChild(positionElement)
       })
 
-      // Reativa os event listeners
       reattachPositionEventListeners()
     }
 
@@ -1502,19 +1866,174 @@ function reattachPositionEventListeners() {
 
   // Adiciona novos listeners
   document.querySelectorAll('.removePosition').forEach(button => {
-    button.addEventListener('click', function () {
-      if (confirm('Tem certeza que deseja remover esta posição?')) {
-        this.closest('.positionsEscala').remove()
-      }
+    button.addEventListener('click', async function () {
+      // Adicione async aqui
+      await removePosition_(this.parentElement) // Adicione await aqui
     })
   })
 
   document.querySelectorAll('.savePosition').forEach(button => {
-    button.addEventListener('click', function () {
-      createInPeoplesEscala(this)
+    button.addEventListener('click', async function () {
+      await savePosition_(this)
     })
   })
 }
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+function renderPeopleConfig(peoples) {
+  const peopleList = document.getElementById('peopleList')
+  peopleList.innerHTML = ''
+
+  Object.entries(peoples).forEach(([matricula, person]) => {
+    const personDiv = document.createElement('div')
+    personDiv.className = 'person-card'
+    personDiv.dataset.matricula = matricula
+
+    // Campos editáveis
+    personDiv.innerHTML = `
+  <div class="person-header">
+    <h3>${person.Name || 'Nome não informado'}</h3>
+    <span class="matricula">Matrícula: ${person.Matricula || ''}</span>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group half-width">
+      <label>Cargo</label>
+      <input type="text" class="person-field" data-field="Additionals.Role" value="${
+        person.Additionals?.Role || ''
+      }" />
+    </div>
+    <div class="form-group half-width">
+      <label>Escala</label>
+      <input type="text" class="person-field" data-field="Scale" value="${
+        person.Scale || ''
+      }" />
+    </div>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group third-width">
+      <label>Time</label>
+      <input type="text" class="person-field" data-field="Time" value="${
+        person.Time || ''
+      }" />
+    </div>
+    <div class="form-group third-width">
+      <label>Entrada</label>
+      <input type="time" class="person-field" data-field="TimeEnter" value="${
+        person.TimeEnter || ''
+      }" />
+    </div>
+    <div class="form-group third-width">
+      <label>Saída</label>
+      <input type="time" class="person-field" data-field="TimeExit" value="${
+        person.TimeExit || ''
+      }" />
+    </div>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group half-width">
+      <label>Dia Inicial</label>
+      <input type="number" min="1" max="31" class="person-field" data-field="FirstDay" value="${
+        person.FirstDay || ''
+      }" />
+    </div>
+    <div class="form-group half-width">
+      <label>Mês Inicial</label>
+      <input type="number" min="1" max="12" class="person-field" data-field="FirstMonth" value="${
+        person.FirstMonth || ''
+      }" />
+    </div>
+  </div>
+  
+  <div class="form-row checkbox-row">
+    <div class="form-group checkbox-group">
+      <label>
+        <input type="checkbox" class="person-field" data-field="Docket" ${
+          person.Docket ? 'checked' : ''
+        } />
+        Atestado
+      </label>
+    </div>
+    <div class="form-group checkbox-group">
+      <label>
+        <input type="checkbox" class="person-field" data-field="Holiday" ${
+          person.Holiday ? 'checked' : ''
+        } />
+        Férias
+      </label>
+    </div>
+  </div>
+  
+  <button class="save-btn" data-matricula="${matricula}">Salvar Alterações</button>
+`
+
+    peopleList.appendChild(personDiv)
+  })
+
+  // Adiciona event listeners para os botões de salvar
+  document.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const matricula = this.dataset.matricula
+      const personCard = this.closest('.person-card')
+      const fields = personCard.querySelectorAll('.person-field')
+
+      const updates = {}
+      fields.forEach(field => {
+        const fieldName = field.dataset.field
+        let value
+
+        if (field.type === 'checkbox') {
+          value = field.checked
+        } else if (field.type === 'number') {
+          value = parseInt(field.value) || 0
+        } else {
+          value = field.value
+        }
+
+        // Para campos aninhados como Additionals.Role
+        if (fieldName.includes('.')) {
+          const [parent, child] = fieldName.split('.')
+          updates[parent] = {
+            ...peoples[matricula][parent],
+            [child]: value
+          }
+        } else {
+          updates[fieldName] = value
+        }
+      })
+
+      // Atualiza no banco de dados
+      if (actualScale && actualLogin) {
+        const personRef = database.ref(
+          `Users/${actualLogin}/Escalas/${actualScale}/peoples/${matricula}`
+        )
+        personRef
+          .update(updates)
+          .then(() => {
+            console.log(`Dados de ${matricula} atualizados com sucesso!`)
+            alert('Alterações salvas com sucesso!')
+          })
+          .catch(error => {
+            console.error('Erro ao atualizar pessoa:', error)
+            alert('Erro ao salvar alterações!')
+          })
+      } else {
+        alert('Nenhuma escala selecionada ou usuário não logado!')
+      }
+    })
+  })
+}
+
+// Quando precisar exibir o peoplesConfig:
+// document.getElementById('peoplesConfig').classList.remove('hidden');
+// renderPeopleConfig(peoplesData);
+
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
