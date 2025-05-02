@@ -212,8 +212,8 @@ body {
 
   #btnSave {
     position: absolute;
-    top: 5rem;
-    right: 9rem;
+    top: 2rem;
+    right: 18rem;
 
     background: #002F6C;
 
@@ -239,6 +239,9 @@ body {
     cursor: pointer;
 
     margin-bottom: 0.5rem;
+
+    min-width: 20rem;
+    background: #002f6c0a;
   }
 
   input[id="nameEscala"] {
@@ -286,7 +289,9 @@ body {
       border-right: 2px solid #002F6C;
     }
 
-    
+    #btnConfigsEscala {
+      border-right: 2px solid #002F6C;
+    }
   }
 
   #btnReload {
@@ -305,11 +310,21 @@ body {
     }
 
     transition: 1s;
+    
   }
 
   #btnReload:hover {
     cursor: pointer;
     transform: rotate(180deg);
+  }
+
+  @keyframes animationRoll {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   #btnAddPeople {
@@ -492,6 +507,11 @@ body {
     margin-bottom: 1rem;
     padding: 0.4rem;
 
+    .month-closed {
+      transform: scale(0.5);
+      height: 14rem;
+    }
+
     .person {
       display: flex;
 
@@ -523,6 +543,8 @@ body {
         text-overflow: ellipsis;
 
         width: 15rem;
+
+        text-transform: uppercase;
       }
 
       .timeEnter {
@@ -566,6 +588,12 @@ body {
       color: #002F6C;
       font-size: 0.8rem;
     }
+    h3 {
+      border: 2px solid #002F6C;
+      text-align: center;
+      color: #002F6C;
+      font-size: 0.8rem;
+    }
   }
 
   #btnSavePDF {
@@ -595,7 +623,7 @@ body {
     padding: 0.4rem;
 
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     justify-items: center;
     align-items: center;
     
@@ -604,9 +632,12 @@ body {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
 
       border: 2px solid #002F6C;
+
+      height: 90%;
+      overflow-y: scroll;
+      overflow-x: hidden;
 
       h1 {
         font-size: 1rem;
@@ -643,8 +674,10 @@ body {
                width: 100%;
                text-align: center;
 
+               text-transform: uppercase;
                font-weight: 800;
                color: #002F6C;
+               font-size: 0.7rem;
 
                white-space: nowrap; 
                overflow: hidden; 
@@ -663,6 +696,97 @@ body {
             }
           }
         
+        }
+      }
+
+      .day-container {
+        &::-webkit-scrollbar {
+          width: 12px; 
+          height: 12px; 
+        }
+      
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1; /* Cor do fundo da barra */
+          border-radius: 10px;
+        }
+      
+        &::-webkit-scrollbar-thumb {
+          background: #002F6C; /* Cor da barra de rolagem */
+          border-radius: 10px;
+          border: 3px solid #f1f1f1; /* Borda ao redor da barra */
+        }
+      
+        &::-webkit-scrollbar-thumb:hover {
+          background: #555; /* Cor quando passar o mouse */
+        }
+      
+        /* Para Firefox */
+        scrollbar-width: thin; /* ou 'auto' ou 'none' */
+        scrollbar-color: #002F6C #f1f1f1; /* thumb e track */
+      }
+
+      .day-container {
+        transition: all 0.3s ease;
+      }
+
+      .day-container.full-screen {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        z-index: 10;
+       }
+
+       
+
+        .day-container.full-screen {
+          background-color: #fff;
+          box-shadow: 0 0 10px rgba(0,0,0,0.2);
+          border: 2px solid #002F6C;
+        }
+
+    }
+
+    .full-screen-mode {
+      display: flex !important;
+
+      .day-container {
+
+        .day-title {
+          font-size: 1.4rem;
+        }
+
+        .escalaPosition {
+          width: 100%;
+          height: 100%;
+
+          h2 {
+            font-size: 1.2rem;
+          }
+
+          .textNameValue {
+            font-size: 1.2rem;
+          }
+
+          .spacePeopleMin, .spacePeopleFix, .spacePeopleFixed {
+            width: 40rem;
+
+            div {
+              font-size: 0.8rem;
+
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+            }
+          }
+
+
+          .spacePeoplesTimes {
+            h2 {
+              font-size: 1rem !important;
+            }
+          }
+
         }
       }
     }
@@ -780,8 +904,8 @@ body {
       }
       
       .options-container {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
         max-height: 150px;
         overflow-y: auto;
@@ -843,6 +967,133 @@ body {
     }
   }
 
+  .peoplesConfig {
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    
+    &.hidden {
+      display: none;
+    }
+    
+    .people-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .person-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      
+      .person-header {
+        margin-bottom: 10px;
+        
+        h3 {
+          margin: 0;
+          color: #333;
+          font-size: 1.2rem;
+        }
+        
+        .matricula {
+          font-size: 0.85rem;
+          color: #666;
+        }
+      }
+      
+      .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 10px;
+        
+        &.checkbox-row {
+          align-items: center;
+          margin-top: 5px;
+        }
+      }
+      
+      .form-group {
+        flex: 1;
+        
+        &.half-width {
+          flex: 0 0 calc(50% - 8px);
+        }
+        
+        &.third-width {
+          flex: 0 0 calc(33.33% - 10px);
+        }
+        
+        label {
+          display: block;
+          margin-bottom: 5px;
+          font-size: 0.85rem;
+          color: #555;
+          font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="time"],
+        input[type="number"] {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          text-transform: uppercase;
+          
+          &:focus {
+            border-color: #4CAF50;
+            outline: none;
+          }
+        }
+        
+        input[type="number"] {
+          max-width: 100%;
+        }
+      }
+      
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        
+        label {
+          display: flex;
+          align-items: center;
+          margin-bottom: 0;
+          cursor: pointer;
+          font-size: 0.85rem;
+          color: #555;
+        }
+        
+        input[type="checkbox"] {
+          margin-right: 8px;
+        }
+      }
+      
+      .save-btn {
+        background: #4CAF50;
+        color: white;
+        font-weight: 700;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
+        margin-top: 10px;
+        width: 100%;
+        
+        &:hover {
+          background: #45a049;
+        }
+      }
+    }
+  }
 
 }
 
