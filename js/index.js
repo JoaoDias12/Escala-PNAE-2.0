@@ -37,7 +37,7 @@ function getSPTime() {
 /////////////////////////////////////////////////////////////////
 //////////////////////////LOGINAREA//////////////////////////////
 
-const names = ['Dias', 'Pamela', 'Joao', 'Cesar', 'Zaman'] // Lista de nomes permitidos
+const names = ['Dias', 'Pamela', 'Joao', 'Cesar', 'Zaman','Cintia'] // Lista de nomes permitidos
 let SENHA_LOGIN = '25137'
 let login = document.getElementById('login')
 let allEscalas = document.getElementById('allEscalas')
@@ -76,9 +76,9 @@ btnLogin.addEventListener('click', e => {
   }
 })
 
-let actualLogin = 'Dias'
-let actualScale = '-OOVupIf0JfBij2S-3AP'
-//
+let actualLogin = ''
+let actualScale = ''
+//-OOVupIf0JfBij2S-3AP
 
 /////////////////////////////////////////////////////////////////
 //////////////////////////FIREBASE USER HANDLING/////////////////
