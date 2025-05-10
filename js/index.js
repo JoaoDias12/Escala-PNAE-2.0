@@ -37,7 +37,7 @@ function getSPTime() {
 /////////////////////////////////////////////////////////////////
 //////////////////////////LOGINAREA//////////////////////////////
 
-const names = ['Dias', 'Pamela', 'Joao', 'Cesar', 'Zaman','Cintia'] // Lista de nomes permitidos
+const names = ['Dias', 'Pamela', 'Joao', 'Cesar', 'Zaman'] // Lista de nomes permitidos
 let SENHA_LOGIN = '25137'
 let login = document.getElementById('login')
 let allEscalas = document.getElementById('allEscalas')
@@ -242,7 +242,7 @@ function loadPeoplesFromDatabase() {
   }
 
   const db = firebase.database()
-  const ref = db.ref(`Users/Dias/Escalas/${actualScale}/peoples`)
+  const ref = db.ref(`Users/${actualLogin}/Escalas/${actualScale}/peoples`)
 
   ref.once(
     'value',
@@ -430,7 +430,7 @@ function calcSlacksForPeriod(proximoPeriodo, escala, pessoa) {
   }
 
   // Pegar apenas as últimas 2 folgas anteriores
-  ultimasFolgas = ultimasFolgas.slice(-2)
+  ultimasFolgas = ultimasFolgas.slice(-8)
 
   // Loop para calcular folgas para o próximo período
   while (folgas.length < proximoPeriodo) {
@@ -806,7 +806,7 @@ function addPeople() {
     document.getElementById('addPeopleFirstMonth').value
   )
   const escala = document.getElementById('addPeopleTypeScale').value
-  const Role = document.getElementById('addPeopleTypeScale').value
+  const Role = document.getElementById('addPeopleRole').value
 
   peoples[matricula] = {
     Matricula: matricula,
@@ -838,14 +838,16 @@ function removePeople() {
   if (peoples[matricula]) {
     firebase
       .database()
-      .ref(`Users/Dias/Escalas/${actualScale}/peoples/${matricula}`)
+      .ref(`Users/${actualLogin}/Escalas/${actualScale}/peoples/${matricula}`)
       .remove()
       .then(() => {
         delete peoples[matricula]
         console.log('Removido com sucesso!')
-        loadPeoplesFromEscala(actualScale)
-        createPeoplesPDF()
-        loadPeoplesFromDatabase()
+        setTimeout(() => {
+          loadPeoplesFromEscala(actualScale)
+          createPeoplesPDF()
+          loadPeoplesFromDatabase()
+        }, 1000)
       })
   } else {
     console.log('Matrícula não encontrada!')
