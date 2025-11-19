@@ -327,6 +327,7 @@ btnReload.addEventListener('click', function () {
   createPeoplesPDF()
   loadPeoplesFromDatabase()
   loadEscala()
+
 })
 
 btnHome.addEventListener('click', function () {
@@ -1448,6 +1449,11 @@ function deliverPeoples() {
         assigned.removeAttribute('data-people')
         assigned.textContent = ''
       })
+      
+      // ✅ LIMPAR APENAS OS NOMES DAS PESSOAS FIXAS, MAS MANTER O data-people ORIGINAL
+      position.querySelectorAll('.spacePeoplesFixed h2[data-people]').forEach(fixedEl => {
+        fixedEl.textContent = '' // Limpa o nome, mas mantém o data-people original
+      })
     })
   })
 
@@ -1458,89 +1464,92 @@ function deliverPeoples() {
   })
 
   // Para cada dia
-  document
-    .querySelectorAll('.day-container')
-    .forEach((dayContainer, dayIndex) => {
-      const dayTitle = dayContainer.querySelector('.day-title').textContent
-      const [_, dateStr] = dayTitle.split(' - ')
-      const [day, month] = dateStr.split('/').map(Number)
-      const dailyUsed = new Set()
+  document.querySelectorAll('.day-container').forEach((dayContainer, dayIndex) => {
+    const dayTitle = dayContainer.querySelector('.day-title').textContent
+    const [_, dateStr] = dayTitle.split(' - ')
+    const [day, month] = dateStr.split('/').map(Number)
+    const dailyUsed = new Set()
 
-      // Ordena as posições de forma diferente cada dia
-      const positions = Array.from(
-        dayContainer.querySelectorAll('.escalaPosition')
-      )
-      const rotatedPositions = rotatePositions(positions, dayIndex)
+    // Ordena as posições de forma diferente cada dia
+    const positions = Array.from(dayContainer.querySelectorAll('.escalaPosition'))
+    const rotatedPositions = rotatePositions(positions, dayIndex)
 
-      // Processa posições fixas primeiro
-      rotatedPositions.forEach((position, posIndex) => {
-        const fixedElements = position.querySelectorAll(
-          '.spacePeoplesFixed h2[data-people]'
-        )
-        fixedElements.forEach(el => {
-          const matricula = el.dataset.people
-          if (isPersonAvailable(peoples[matricula], day, month)) {
-            el.textContent = peoples[matricula].Name
-            dailyUsed.add(matricula)
-            globalUsage[matricula]++
+    // Processa posições fixas primeiro
+    rotatedPositions.forEach((position, posIndex) => {
+      const fixedElements = position.querySelectorAll('.spacePeoplesFixed h2[data-people]')
+      fixedElements.forEach(el => {
+        const matriculaOriginal = el.dataset.people // ✅ PRESERVA A MATRÍCULA ORIGINAL
+        const pessoaOriginal = peoples[matriculaOriginal]
+
+        
+        if (pessoaOriginal && isPersonAvailable(pessoaOriginal, day, month)) {
+          // ✅ Pessoa fixa original está disponível - usar ela
+          el.textContent = pessoaOriginal.Name
+          dailyUsed.add(matriculaOriginal)
+          globalUsage[matriculaOriginal]++
+        } else {
+          // ❌ Pessoa fixa não disponível - encontrar substituto TEMPORÁRIO
+          const requiredRole = position.querySelector('.spacePeopleMin, .spacePeopleFix')?.dataset.role
+          const replacement = findBestPersonForPosition(
+            getRequiredTimes(position),
+            day,
+            month,
+            Array.from(dailyUsed),
+            globalUsage,
+            position.dataset.type,
+            posIndex,
+            0,
+            requiredRole
+          )
+          
+          if (replacement) {
+            // ✅ MOSTRAR substituto, mas NÃO ALTERAR o data-people original
+            el.textContent = `${replacement.Name} (subst.)` // Indica que é substituto
+            // ⚠️ NÃO FAZER: el.dataset.people = replacement.Matricula
+            dailyUsed.add(replacement.Matricula)
+            globalUsage[replacement.Matricula]++
+            
+            // ✅ Opcional: adicionar atributo para identificar que é substituto
+            el.dataset.temporaryReplacement = replacement.Matricula
           } else {
-            const requiredRole = position.querySelector(
-              '.spacePeopleMin, .spacePeopleFix'
-            )?.dataset.role
-            const replacement = findBestPersonForPosition(
-              getRequiredTimes(position),
-              day,
-              month,
-              Array.from(dailyUsed),
-              globalUsage,
-              position.dataset.type,
-              posIndex,
-              0,
-              requiredRole
-            )
-            if (replacement) {
-              el.textContent = replacement.Name
-              el.dataset.people = replacement.Matricula
-              dailyUsed.add(replacement.Matricula)
-              globalUsage[replacement.Matricula]++
-            }
+            // ❌ Nenhum substituto encontrado - deixar vazio
+            el.textContent = '(indisponível)'
           }
-        })
-      })
-
-      // Processa posições min e fix
-      rotatedPositions.forEach((position, posIndex) => {
-        const requiredRole = position.querySelector(
-          '.spacePeopleMin, .spacePeopleFix'
-        )?.dataset.role
-
-        processPositionWithRotation(
-          position.querySelector('.spacePeopleMin'),
-          'spPplMin',
-          day,
-          month,
-          dailyUsed,
-          globalUsage,
-          getRequiredTimes(position),
-          position.dataset.type,
-          posIndex,
-          requiredRole
-        )
-
-        processPositionWithRotation(
-          position.querySelector('.spacePeopleFix'),
-          'spPplFix',
-          day,
-          month,
-          dailyUsed,
-          globalUsage,
-          getRequiredTimes(position),
-          position.dataset.type,
-          posIndex,
-          requiredRole
-        )
+        }
       })
     })
+
+    // Processa posições min e fix (esta parte permanece igual)
+    rotatedPositions.forEach((position, posIndex) => {
+      const requiredRole = position.querySelector('.spacePeopleMin, .spacePeopleFix')?.dataset.role
+
+      processPositionWithRotation(
+        position.querySelector('.spacePeopleMin'),
+        'spPplMin',
+        day,
+        month,
+        dailyUsed,
+        globalUsage,
+        getRequiredTimes(position),
+        position.dataset.type,
+        posIndex,
+        requiredRole
+      )
+
+      processPositionWithRotation(
+        position.querySelector('.spacePeopleFix'),
+        'spPplFix',
+        day,
+        month,
+        dailyUsed,
+        globalUsage,
+        getRequiredTimes(position),
+        position.dataset.type,
+        posIndex,
+        requiredRole
+      )
+    })
+  })
 
   saveEscala()
 }
@@ -1805,7 +1814,6 @@ async function loadEscala() {
     // Carrega positionsData (configurações das posições)
     const positionsContainer = document.getElementById('positionsContainer')
     positionsContainer.innerHTML = ''
-
     if (escalaData.positionsData) {
       Object.values(escalaData.positionsData).forEach(positionObj => {
         if (!positionObj?.html) return
@@ -1825,6 +1833,7 @@ async function loadEscala() {
             quantMin
           positionElement.querySelector('.inptQuantFixPosition').value =
             quantFix
+
 
           // Marca checkboxes
           const checkboxes = {
@@ -1848,6 +1857,9 @@ async function loadEscala() {
 
       reattachPositionEventListeners()
     }
+
+    deliverPeoples()
+
 
     return true
   } catch (error) {
